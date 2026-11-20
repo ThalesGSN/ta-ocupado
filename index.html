@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; worker-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'">
+  <meta name="referrer" content="no-referrer">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="description" content="Monte a mesa do seu evento como um quebra-cabeça: cada convidado tem preferências, e você arrasta as pessoas até todo mundo ficar feliz.">
+  <meta name="theme-color" content="#C62839">
+  <title>Tá ocupado? Lugares à mesa</title>
+  <link rel="icon" href="assets/img/favicon.svg" type="image/svg+xml">
+  <link rel="preload" href="assets/fonts/nunito-latin.woff" as="font" type="font/woff" crossorigin>
+  <link rel="stylesheet" href="assets/css/app.css">
+  <script type="module" src="assets/js/app.js"></script>
+</head>
+<body>
+  <a class="skip" href="#mesa">Pular para a mesa</a>
+
+  <header class="topbar" id="topbar" hidden>
+    <div class="brand">
+      <span class="logo" aria-hidden="true">Tá ocupado?</span>
+      <button type="button" class="event-title" id="event-title" aria-label="Nome da mesa e ajustes">
+        <span id="event-title-text"></span>
+      </button>
+    </div>
+
+    <div class="score">
+      <div class="meter" id="score-meter" role="progressbar" aria-label="Felicidade da mesa" aria-valuemin="0" aria-valuemax="100">
+        <span class="meter-fill" id="score-fill"></span>
+      </div>
+      <strong class="pct" id="score-pct" aria-hidden="true"></strong>
+      <span class="moods" id="score-moods"></span>
+      <button type="button" class="rules" id="rules-btn" hidden><span class="label"></span><span class="label-long"> com regra quebrada</span></button>
+    </div>
+
+    <nav class="actions" aria-label="Ações da mesa">
+      <button type="button" class="icon-btn" id="btn-undo" aria-label="Desfazer" title="Desfazer (Ctrl+Z)">
+        <svg class="icon" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14 4 9l5-5M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg>
+      </button>
+      <button type="button" class="icon-btn" id="btn-redo" aria-label="Refazer" title="Refazer (Ctrl+Shift+Z)">
+        <svg class="icon" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 14 5-5-5-5M20 9H9.5a5.5 5.5 0 0 0 0 11H13"/></svg>
+      </button>
+      <button type="button" class="btn primary" id="btn-suggest">
+        <svg class="icon" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.8 4.9L19 9.7l-5.2 1.8L12 16.5l-1.8-5L5 9.7l5.2-1.8ZM19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8Z"/></svg>
+        <span class="label">Sugerir<span class="label-long"> mesa</span></span>
+      </button>
+      <button type="button" class="btn only-desktop" id="btn-people">
+        <svg class="icon" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM2 21a7 7 0 0 1 14 0M17 11a3 3 0 1 0 0-6M22 21a6 6 0 0 0-4-5.6"/></svg>
+        Pessoas
+      </button>
+      <button type="button" class="btn only-desktop" id="btn-share">
+        <svg class="icon" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 8l5-5 5 5M5 13v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6"/></svg>
+        Compartilhar
+      </button>
+    </nav>
+
+    <div class="menu-wrap">
+      <button type="button" class="icon-btn" id="btn-more" aria-label="Mais opções" aria-haspopup="menu" aria-expanded="false" aria-controls="more-menu">
+        <svg class="icon" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M5 12h.01M12 12h.01M19 12h.01"/></svg>
+      </button>
+      <div class="menu" id="more-menu" role="menu" aria-label="Mais opções" hidden></div>
+    </div>
+  </header>
+
+  <main>
+    <section class="welcome" id="welcome" hidden aria-labelledby="welcome-title">
+      <div class="welcome-art" id="welcome-art" aria-hidden="true"></div>
+      <h1 class="logo logo-big" id="welcome-title">Tá ocupado?</h1>
+      <p class="lede">Monte a mesa do seu evento como um quebra-cabeça. Cada convidado tem suas preferências, e você arrasta as pessoas até todo mundo ficar feliz.</p>
+      <div class="welcome-actions">
+        <button type="button" class="btn primary big" data-act="demo">Abrir o exemplo</button>
+        <button type="button" class="btn big" data-act="import">Importar convidados</button>
+        <button type="button" class="btn ghost big" data-act="blank">Começar do zero</button>
+      </div>
+      <p class="privacy">Os nomes ficam só neste aparelho. A app não envia nada para servidor nenhum.</p>
+    </section>
+
+    <div class="layout" id="layout" hidden>
+      <section class="stage" id="mesa" aria-label="Mesa" tabindex="-1">
+        <div class="move-banner" id="move-banner" hidden>
+          <span id="move-text"></span>
+          <button type="button" class="btn small" id="move-cancel">Cancelar</button>
+        </div>
+        <div class="table-area" id="table-area"></div>
+      </section>
+
+      <aside class="panel" id="panel" aria-label="Detalhes e pessoas fora da mesa">
+        <div class="sheet" id="sheet"></div>
+        <section class="bench" id="bench" data-drop="bench" aria-labelledby="bench-title">
+          <h2 id="bench-title">Fora da mesa</h2>
+          <p class="bench-empty">Todo mundo tem lugar.</p>
+          <div class="chip-row" data-chips></div>
+        </section>
+        <section class="absent" id="absent" hidden aria-labelledby="absent-title">
+          <h2 id="absent-title">Não vão</h2>
+          <div class="chip-row" data-chips></div>
+        </section>
+      </aside>
+    </div>
+  </main>
+
+  <div class="toasts" id="toasts"></div>
+  <div class="sr-only" id="live" aria-live="polite"></div>
+  <section class="print-sheet" id="print-sheet" aria-hidden="true"></section>
+  <noscript><p class="noscript">Esta app precisa de JavaScript ligado.</p></noscript>
+</body>
+</html>

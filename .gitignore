@@ -1,0 +1,11 @@
+# Dados de convidados nunca entram no repositório
+*.private.json
+convidados*.json
+mesa-*.json
+dados/
+private/
+
+# Ambiente
+node_modules/
+.DS_Store
+Thumbs.db
