@@ -82,7 +82,15 @@ npm test                       # testes do modelo, do otimizador e do link (Node
 
 ## Publicação
 
-O site é servido pelo GitHub Pages direto da branch `main` (pasta raiz). O arquivo `.nojekyll` desliga o processamento do Jekyll.
+Site: https://thalesgsn.github.io/ta-ocupado/
+
+O GitHub Pages publica a branch `gh-pages` (pasta raiz). Para publicar uma atualização feita na `main`:
+
+```bash
+git push origin main main:gh-pages
+```
+
+O arquivo `.nojekyll` desliga o processamento do Jekyll.
 
 ## Créditos
 
