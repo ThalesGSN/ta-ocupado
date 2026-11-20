@@ -29,29 +29,6 @@ export const ROLES = {
   convidado: { label: 'Convidado', plural: 'Convidados' },
 };
 
-const FOOD_ICONS = [
-  [/🤷/, '🤷'],
-  [/brownie|chocolate|brigadeiro|trufa/i, '🍫'],
-  [/p[ãa]o de queijo|queijo/i, '🧀'],
-  [/pastel|coxinha|salgad|empada|esfirra|kibe|quibe/i, '🥟'],
-  [/bolo|torta|cake|cupcake/i, '🍰'],
-  [/pipoca/i, '🍿'],
-  [/pizza/i, '🍕'],
-  [/sandu[íi]che|misto|lanche/i, '🥪'],
-  [/refri|suco|bebida|guaran[áa]|ch[áa]\b|caf[ée]/i, '🥤'],
-  [/fruta|morango|salada de fruta/i, '🍓'],
-  [/sorvete|picol[ée]/i, '🍨'],
-  [/biscoito|cookie|bolacha/i, '🍪'],
-  [/p[ãa]o/i, '🥖'],
-  [/doce|pudim|mousse/i, '🍮'],
-];
-
-export function foodIcon(food) {
-  if (!food) return '';
-  for (const [re, icon] of FOOD_ICONS) if (re.test(food)) return icon;
-  return '🍽️';
-}
-
 export function tagInfo(tags, id) {
   return tags[id] || DEFAULT_TAGS[id] || { label: id, icon: '🏷️' };
 }

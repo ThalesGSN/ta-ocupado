@@ -546,14 +546,6 @@ button {
     inset 0 0 0 3px #eef1f6,
     0 2px 0 rgba(0, 0, 0, 0.18);
 }
-.plate.has-food {
-  width: 38px;
-  height: 38px;
-}
-.food {
-  font-size: 19px;
-  line-height: 1;
-}
 
 .side {
   display: grid;
@@ -995,8 +987,7 @@ button {
   font-weight: 900;
 }
 .pc-role,
-.pc-about,
-.pc-food {
+.pc-about {
   margin: 2px 0 0;
   font-size: 14.5px;
   color: var(--ink-2);

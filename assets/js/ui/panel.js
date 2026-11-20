@@ -2,7 +2,7 @@
 import { h, icon } from './dom.js';
 import { bigAvatar, moodFace } from './avatar.js';
 import { REL_LABEL, seatLabel } from '../model.js';
-import { ROLES, tagInfo, foodIcon } from '../tags.js';
+import { ROLES, tagInfo } from '../tags.js';
 
 export function roleLine(p) {
   if (p.role === 'lider') return p.ministry ? `Líder do ministério ${p.ministry}` : 'Líder';
@@ -73,7 +73,6 @@ export function renderPerson(root, opts) {
       h('h2', { class: 'pc-name', id: 'pc-name', text: p.name }),
       h('p', { class: 'pc-role', text: roleLine(p) }),
       p.about ? h('p', { class: 'pc-about', text: p.about }) : null,
-      p.food ? h('p', { class: 'pc-food' }, h('span', { 'aria-hidden': 'true', text: foodIcon(p.food) }), ` Vai levar: ${p.food === '🤷' ? 'ainda não decidiu' : p.food}`) : null,
     ),
     h('button', { type: 'button', class: 'icon-btn pc-close', 'aria-label': 'Fechar detalhes', onclick: actions.close }, icon('close')),
   );

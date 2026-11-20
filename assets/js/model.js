@@ -116,7 +116,6 @@ export function normalizeState(raw) {
       about: str(p.about, 120),
       age: AGE_BANDS.includes(p.age) ? p.age : '',
       gender: p.gender === 'f' || p.gender === 'm' ? p.gender : '',
-      food: str(p.food, 60),
       tags: uniqStrings(p.tags, 20).filter((t) => ID_RE.test(t)),
       wants: uniqStrings(p.wants, 4).filter((t) => ID_RE.test(t)),
       partner: typeof p.partner === 'string' ? p.partner : '',

@@ -123,7 +123,7 @@ export function openImportDialog({ onLoad }) {
       'details',
       { class: 'format-help' },
       h('summary', { text: 'Formato do arquivo' }),
-      h('p', { class: 'dlg-text', text: 'Só o nome é obrigatório. Campos opcionais: role (lider, membro ou convidado), ministry, about, age (13–17, 18–25, 26–35, 36–50, 51–60, 60+), gender (f ou m), food, tags, wants, partner (id do par), near e avoid (listas de ids).' }),
+      h('p', { class: 'dlg-text', text: 'Só o nome é obrigatório. Campos opcionais: role (lider, membro ou convidado), ministry, about, age (13–17, 18–25, 26–35, 36–50, 51–60, 60+), gender (f ou m), tags, wants, partner (id do par), near e avoid (listas de ids).' }),
     ),
   ];
   const d = openDialog({ title: 'Importar convidados', body, actions: [cancel, load] });
@@ -285,7 +285,7 @@ export function openPeopleEditor({ getState, update, focusId, toast }) {
 
   function showForm(pid) {
     const state = getState();
-    const p = pid ? state.people.find((x) => x.id === pid) : { id: '', name: '', role: 'membro', ministry: '', about: '', age: '', gender: '', food: '', tags: [], wants: [], partner: '', near: [], avoid: [], present: true };
+    const p = pid ? state.people.find((x) => x.id === pid) : { id: '', name: '', role: 'membro', ministry: '', about: '', age: '', gender: '', tags: [], wants: [], partner: '', near: [], avoid: [], present: true };
     d.setTitle(pid ? `Editar ${p.name}` : 'Nova pessoa');
     const allTags = { ...DEFAULT_TAGS, ...state.tags };
     const others = state.people.filter((x) => x.id !== pid).sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
@@ -297,7 +297,6 @@ export function openPeopleEditor({ getState, update, focusId, toast }) {
     const about = h('input', { type: 'text', class: 'field-input', id: 'pf-about', value: p.about, maxlength: 120, placeholder: 'Profissão, fase da vida…' });
     const age = h('select', { class: 'field-input', id: 'pf-age' }, h('option', { value: '', text: 'Não informada' }), AGE_BANDS.map((a) => h('option', { value: a, selected: p.age === a, text: `${a} anos` })));
     const gender = h('select', { class: 'field-input', id: 'pf-gender' }, h('option', { value: '', text: 'Não informado' }), h('option', { value: 'f', selected: p.gender === 'f', text: 'Feminino' }), h('option', { value: 'm', selected: p.gender === 'm', text: 'Masculino' }));
-    const food = h('input', { type: 'text', class: 'field-input', id: 'pf-food', value: p.food, maxlength: 60, placeholder: 'Ex.: pão de queijo' });
     const partner = h('select', { class: 'field-input', id: 'pf-partner' }, h('option', { value: '', text: 'Ninguém' }), others.map((o) => h('option', { value: o.id, selected: p.partner === o.id, text: o.name })));
     const tagsT = tagToggles(allTags, p.tags, { name: 'Interesses' });
     const wantsT = tagToggles(allTags, p.wants, { name: 'Quer papo sobre', max: 3 });
@@ -317,7 +316,7 @@ export function openPeopleEditor({ getState, update, focusId, toast }) {
       h(
         'form',
         { class: 'person-form', novalidate: true, onsubmit: (e) => e.preventDefault() },
-        h('div', { class: 'grid-2' }, field('Nome', name), field('Papel', roleSel), ministryField, field('Sobre', about), field('Faixa etária', age), field('Gênero', gender, 'Usado pelos ministérios de homens e de mulheres.'), field('Vai levar', food), field('Par (casal ou noivos)', partner, 'O par senta sempre ao lado.')),
+        h('div', { class: 'grid-2' }, field('Nome', name), field('Papel', roleSel), ministryField, field('Sobre', about), field('Faixa etária', age), field('Gênero', gender, 'Usado pelos ministérios de homens e de mulheres.'), field('Par (casal ou noivos)', partner, 'O par senta sempre ao lado.')),
         h('fieldset', { class: 'field' }, h('legend', { class: 'field-label', text: 'Interesses' }), tagsT.el),
         h('fieldset', { class: 'field' }, h('legend', { class: 'field-label', text: 'Quer papo sobre (até 3)' }), wantsT.el),
         field('Quer ficar perto de', nearSel, 'Segure Ctrl (ou Cmd) para escolher mais de uma pessoa.'),
@@ -351,7 +350,6 @@ export function openPeopleEditor({ getState, update, focusId, toast }) {
           about: about.value.trim(),
           age: age.value,
           gender: gender.value,
-          food: food.value.trim(),
           tags: tagsT.value(),
           wants: wantsT.value(),
           near: [...nearSel.selectedOptions].map((o) => o.value),

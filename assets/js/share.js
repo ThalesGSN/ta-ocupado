@@ -31,7 +31,7 @@ async function pipe(bytes, transform) {
 export function compact(state) {
   const people = state.people.map((p) => {
     const o = { id: p.id, name: p.name };
-    for (const k of ['role', 'ministry', 'about', 'age', 'gender', 'food', 'partner']) if (p[k]) o[k] = p[k];
+    for (const k of ['role', 'ministry', 'about', 'age', 'gender', 'partner']) if (p[k]) o[k] = p[k];
     for (const k of ['tags', 'wants', 'near', 'avoid']) if (p[k] && p[k].length) o[k] = p[k];
     if (p.present === false) o.present = false;
     return o;

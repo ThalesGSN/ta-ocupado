@@ -52,7 +52,6 @@ Só o nome é obrigatório.
       "about": "Professora",
       "age": "26–35",
       "gender": "f",
-      "food": "Pão de queijo",
       "tags": ["educacao", "musica"],
       "wants": ["musica"],
       "partner": "beto",

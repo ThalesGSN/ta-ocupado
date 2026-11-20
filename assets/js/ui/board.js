@@ -2,7 +2,6 @@
 import { h, reducedMotion } from './dom.js';
 import { createChip, updateChip } from './avatar.js';
 import { seatId, seatLabel, parseSeat } from '../model.js';
-import { foodIcon } from '../tags.js';
 
 const SEAT_MIN = 72;
 const SEAT_MAX = 88;
@@ -97,7 +96,7 @@ export class Board {
             h('span', { class: 'hint', 'aria-hidden': 'true' }),
           ),
         );
-        plates.append(h('span', { class: 'plate', dataset: { seat: id } }, h('span', { class: 'food' })));
+        plates.append(h('span', { class: 'plate', dataset: { seat: id } }));
       }
     }
   }
@@ -192,12 +191,6 @@ export class Board {
         seat.removeAttribute('role');
         seat.removeAttribute('aria-label');
       }
-      const plate = (side === 'A' ? this.platesA : this.platesB).children[i];
-      const food = person && person.food ? foodIcon(person.food) : '';
-      plate.firstElementChild.textContent = food;
-      plate.classList.toggle('has-food', !!food);
-      if (food) plate.title = `${person.name} vai levar: ${person.food}`;
-      else plate.removeAttribute('title');
     }
 
     const benchPeople = state.people.filter((p) => p.present && !used.has(p.id));
