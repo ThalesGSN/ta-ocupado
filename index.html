@@ -20,8 +20,9 @@
   <header class="topbar" id="topbar" hidden>
     <div class="brand">
       <span class="logo" aria-hidden="true">Tá ocupado?</span>
-      <button type="button" class="event-title" id="event-title" aria-label="Nome da mesa e ajustes">
+      <button type="button" class="event-title" id="event-title" aria-label="Minhas mesas" title="Minhas mesas: trocar, salvar cópia, renomear">
         <span id="event-title-text"></span>
+        <svg class="icon caret" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m7 10 5 5 5-5"/></svg>
       </button>
     </div>
 
@@ -49,11 +50,12 @@
         <svg class="icon" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM2 21a7 7 0 0 1 14 0M17 11a3 3 0 1 0 0-6M22 21a6 6 0 0 0-4-5.6"/></svg>
         Pessoas
       </button>
-      <button type="button" class="btn only-desktop" id="btn-share">
-        <svg class="icon" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 8l5-5 5 5M5 13v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6"/></svg>
-        Compartilhar
-      </button>
     </nav>
+
+    <button type="button" class="btn share-btn" id="btn-share" aria-label="Compartilhar a mesa" title="Compartilhar a mesa atual por link">
+      <svg class="icon" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 8l5-5 5 5M5 13v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6"/></svg>
+      <span class="label-long">Compartilhar</span>
+    </button>
 
     <div class="menu-wrap">
       <button type="button" class="icon-btn" id="btn-more" aria-label="Mais opções" aria-haspopup="menu" aria-expanded="false" aria-controls="more-menu">

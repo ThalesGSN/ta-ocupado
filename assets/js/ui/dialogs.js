@@ -5,12 +5,12 @@ import { roleLine } from './panel.js';
 import { AGE_BANDS, ROLES, DEFAULT_TAGS } from '../tags.js';
 import { slugify, uniqueId, normalizeState } from '../model.js';
 
-export function openDialog({ title, body, actions = [], wide = false, onClose, labelledBy }) {
+export function openDialog({ title, body, actions = [], wide = false, onClose, labelledBy, className = '' }) {
   const titleId = labelledBy || `dlg-${Math.random().toString(36).slice(2, 8)}`;
   const footer = actions.length ? h('footer', { class: 'dlg-foot' }, actions) : null;
   const dlg = h(
     'dialog',
-    { class: `dlg${wide ? ' is-wide' : ''}`, 'aria-labelledby': titleId },
+    { class: `dlg${wide ? ' is-wide' : ''}${className ? ` ${className}` : ''}`, 'aria-labelledby': titleId },
     h(
       'header',
       { class: 'dlg-head' },
@@ -83,27 +83,50 @@ export function downloadJson(state, name) {
   setTimeout(() => URL.revokeObjectURL(url), 2000);
 }
 
-export function openShareDialog({ url, onDownload, toast }) {
+export function canNativeShare(url) {
+  try {
+    return typeof navigator.share === 'function' && (typeof navigator.canShare !== 'function' || navigator.canShare({ url }));
+  } catch {
+    return false;
+  }
+}
+
+export function openShareDialog({ url, title, onDownload, toast }) {
+  const native = canNativeShare(url);
   const input = h('input', { type: 'text', class: 'field-input mono-url', readonly: true, value: url, 'aria-label': 'Link da mesa', onfocus: (e) => e.target.select() });
-  const copy = h('button', { type: 'button', class: 'btn primary' }, icon('share', 18), 'Copiar link');
-  const dl = h('button', { type: 'button', class: 'btn' }, icon('download', 18), 'Baixar arquivo .json');
+  const send = native ? h('button', { type: 'button', class: 'btn primary' }, icon('share', 18), 'Enviar…') : null;
+  const copy = h('button', { type: 'button', class: `btn${native ? '' : ' primary'}` }, icon('copy', 18), 'Copiar link');
+  const dl = h('button', { type: 'button', class: 'btn' }, icon('download', 18), 'Baixar .json');
   const body = [
-    h('p', { class: 'dlg-text', text: 'O link abre a mesa como está agora, com todos os nomes. Os dados ficam depois do # no endereço, a parte que o navegador não envia para o servidor.' }),
-    h('p', { class: 'dlg-text warn', text: 'Mesmo assim, quem tiver o link consegue ver a mesa. Mande só para quem precisa.' }),
+    h('p', { class: 'dlg-text', text: 'Quem abrir este link vê a mesa como está agora, com os lugares e os dados de cada pessoa. A pessoa pode mexer na cópia dela sem mudar a sua.' }),
+    h('p', { class: 'dlg-text', text: 'O link é uma foto deste momento: se você mudar a mesa depois, compartilhe um link novo.' }),
+    h('p', { class: 'dlg-text warn', text: 'Os dados vão depois do # no endereço, parte que o navegador não envia para o servidor. Mesmo assim, quem tiver o link vê os nomes: mande só para quem precisa.' }),
     input,
     h('p', { class: 'dlg-note', text: `${url.length.toLocaleString('pt-BR')} caracteres.` }),
   ];
-  const d = openDialog({ title: 'Compartilhar a mesa', body, actions: [dl, copy] });
+  const d = openDialog({ title: 'Compartilhar a mesa', body, actions: [dl, copy, send] });
   copy.addEventListener('click', async () => {
     const ok = await copyText(url, input);
     toast(ok ? 'Link copiado.' : 'Não deu para copiar. Selecione o link e copie à mão.');
     if (ok) d.close();
   });
+  if (send) {
+    send.addEventListener('click', async () => {
+      try {
+        await navigator.share({ title: `Mesa: ${title}`, text: `Mesa "${title}" (Tá ocupado?)`, url });
+        d.close();
+        toast('Link enviado.');
+      } catch (err) {
+        if (err && err.name === 'AbortError') return;
+        toast('Não deu para abrir o compartilhamento. Use Copiar link.');
+      }
+    });
+  }
   dl.addEventListener('click', () => {
     onDownload();
     d.close();
   });
-  setTimeout(() => copy.focus(), 0);
+  setTimeout(() => (send || copy).focus(), 0);
 }
 
 export function openImportDialog({ onLoad }) {
@@ -212,6 +235,144 @@ export function openHelpDialog() {
   const ok = h('button', { type: 'button', class: 'btn primary', text: 'Entendi' });
   const d = openDialog({ title: 'Como funciona', body, actions: [ok] });
   ok.addEventListener('click', () => d.close());
+}
+
+// ---------- Minhas mesas ----------
+
+function whenText(ts) {
+  if (!ts) return '';
+  const d = new Date(ts);
+  const now = new Date();
+  const mins = Math.round((now - d) / 60000);
+  if (mins < 1) return 'agora há pouco';
+  if (mins < 60) return `há ${mins} min`;
+  const hm = d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+  const day = (x) => new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime();
+  const days = Math.round((day(now) - day(d)) / 86400000);
+  if (days === 0) return `hoje às ${hm}`;
+  if (days === 1) return `ontem às ${hm}`;
+  return `em ${d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })} às ${hm}`;
+}
+
+/**
+ * opts: { activeId(), list(), renameId, onOpen(id), onRename(id, title), onDuplicate(id) -> newId,
+ *         onSaveCopy() -> newId, onDelete(id) -> Promise<boolean>, onNew() }
+ */
+export function openTablesDialog(opts) {
+  const body = h('div', { class: 'tables-body' });
+  const d = openDialog({ title: 'Minhas mesas', body, className: 'tables-dialog' });
+  let renaming = opts.renameId || null;
+
+  function row(t, isActive) {
+    const people = `${t.people} ${t.people === 1 ? 'pessoa' : 'pessoas'}`;
+    const happy = t.percent != null ? `, ${t.percent}% feliz` : '';
+    if (renaming === t.id) {
+      const input = h('input', { type: 'text', class: 'field-input rename-input', value: t.title, maxlength: 80, 'aria-label': 'Novo nome da mesa' });
+      const form = h(
+        'form',
+        { class: 'rename-form' },
+        input,
+        h('button', { type: 'submit', class: 'btn small primary', text: 'Salvar' }),
+        h('button', { type: 'button', class: 'btn small', text: 'Cancelar', onclick: () => { renaming = null; draw(); } }),
+      );
+      form.addEventListener('submit', (e) => {
+        e.preventDefault();
+        opts.onRename(t.id, input.value);
+        renaming = null;
+        draw();
+      });
+      setTimeout(() => {
+        input.focus();
+        input.select();
+      }, 0);
+      return h('li', { class: `table-row is-renaming${isActive ? ' is-active' : ''}` }, form);
+    }
+    const open = () => {
+      d.close();
+      opts.onOpen(t.id);
+    };
+    return h(
+      'li',
+      { class: `table-row${isActive ? ' is-active' : ''}` },
+      h(
+        'div',
+        { class: 'tr-main' },
+        isActive
+          ? h('strong', { class: 'tr-title', text: t.title })
+          : h('button', { type: 'button', class: 'tr-title tr-open', text: t.title, onclick: open }),
+        h('span', { class: 'tr-meta', text: `${people}${happy}. Editada ${whenText(t.updatedAt)}.` }),
+        isActive ? h('span', { class: 'tr-badge', text: 'Aberta agora' }) : null,
+      ),
+      h(
+        'div',
+        { class: 'tr-actions' },
+        isActive ? null : h('button', { type: 'button', class: 'btn small', text: 'Abrir', onclick: open }),
+        h('button', { type: 'button', class: 'icon-btn', title: 'Renomear', 'aria-label': `Renomear ${t.title}`, onclick: () => { renaming = t.id; draw(); } }, icon('edit', 18)),
+        h('button', {
+          type: 'button',
+          class: 'icon-btn',
+          title: 'Duplicar',
+          'aria-label': `Duplicar ${t.title}`,
+          onclick: () => {
+            const id = opts.onDuplicate(t.id);
+            if (id) {
+              renaming = id;
+              draw();
+            }
+          },
+        }, icon('copy', 18)),
+        h('button', {
+          type: 'button',
+          class: 'icon-btn is-danger',
+          title: 'Excluir',
+          'aria-label': `Excluir ${t.title}`,
+          onclick: async () => {
+            const gone = await opts.onDelete(t.id);
+            if (!gone) return;
+            if (!opts.list().length) d.close();
+            else draw();
+          },
+        }, icon('trash', 18)),
+      ),
+    );
+  }
+
+  function draw() {
+    const tables = opts.list();
+    const active = opts.activeId();
+    const top = h(
+      'div',
+      { class: 'tables-top' },
+      active
+        ? h('button', {
+            type: 'button',
+            class: 'btn primary',
+            onclick: () => {
+              const id = opts.onSaveCopy();
+              if (id) {
+                renaming = id;
+                draw();
+              }
+            },
+          }, icon('copy', 18), 'Salvar uma cópia desta mesa')
+        : null,
+      h('button', { type: 'button', class: 'btn', onclick: () => { d.close(); opts.onNew(); } }, icon('plus', 18), 'Nova mesa'),
+    );
+    body.replaceChildren(
+      h('p', { class: 'dlg-text', text: 'Toda mudança na mesa aberta é salva sozinha. Para guardar um arranjo antes de mexer de novo, salve uma cópia.' }),
+      top,
+      tables.length
+        ? h('ul', { class: 'tables-list' }, tables.map((t) => row(t, t.id === active)))
+        : h('p', { class: 'dlg-text', text: 'Nenhuma mesa salva ainda.' }),
+      h('p', { class: 'dlg-note', text: 'As mesas ficam salvas só neste navegador. Para levar uma mesa a outro aparelho, use Compartilhar ou Baixar arquivo .json.' }),
+    );
+  }
+
+  d.el.addEventListener('refresh', () => {
+    if (!renaming) draw();
+  });
+  draw();
+  return d;
 }
 
 // ---------- Editor de pessoas ----------

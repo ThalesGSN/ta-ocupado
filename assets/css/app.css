@@ -269,6 +269,9 @@ button {
 }
 
 .event-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
   min-width: 0;
   max-width: 30ch;
   margin-left: -7px;
@@ -283,6 +286,14 @@ button {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+#event-title-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.event-title .caret {
+  flex: none;
+  color: var(--ink-3);
 }
 .event-title:hover {
   border-color: var(--line);
@@ -1437,6 +1448,94 @@ select[multiple].field-input {
   color: var(--ink-2);
 }
 
+/* Minhas mesas */
+.tables-top {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+.tables-list {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.table-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 8px 10px 14px;
+  border: 1.5px solid var(--wall-2);
+  border-radius: 14px;
+}
+.table-row.is-active {
+  border-color: var(--blue);
+  background: var(--blue-soft);
+}
+.tr-main {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+  gap: 2px;
+}
+.tr-title {
+  overflow: hidden;
+  font-weight: 850;
+  font-size: 16px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.tr-open {
+  justify-self: start;
+  max-width: 100%;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+}
+.tr-open:hover {
+  color: var(--blue);
+  text-decoration: underline;
+}
+.tr-meta {
+  color: var(--ink-2);
+  font-size: 13.5px;
+}
+.tr-badge {
+  justify-self: start;
+  margin-top: 2px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--blue);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 800;
+}
+.tr-actions {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 2px;
+}
+.icon-btn.is-danger:hover {
+  background: #fdf0ef;
+  color: var(--sad);
+}
+.rename-form {
+  display: flex;
+  flex: 1;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.rename-form .field-input {
+  flex: 1 1 200px;
+  min-height: 38px;
+}
+
 /* ---------- Avisos ---------- */
 
 .toasts {
@@ -1575,21 +1674,30 @@ select[multiple].field-input {
   }
   .brand {
     order: 1;
-    flex: 1 1 calc(100% - 52px);
+    flex: 1 1 calc(100% - 96px);
     gap: 0;
   }
-  .menu-wrap {
+  .share-btn {
     order: 2;
+    width: 40px;
+    min-height: 40px;
+    padding: 0;
+    border-color: transparent;
+    background: transparent;
+    color: var(--ink-2);
+  }
+  .menu-wrap {
+    order: 3;
   }
   .score {
-    order: 3;
+    order: 4;
     flex: 1 1 120px;
     min-width: 0;
     margin: 0;
     gap: 8px;
   }
   .actions {
-    order: 4;
+    order: 5;
     gap: 0;
   }
   .logo {
@@ -1742,6 +1850,13 @@ select[multiple].field-input {
   }
   .grid-2 {
     grid-template-columns: 1fr;
+  }
+  .table-row {
+    flex-wrap: wrap;
+  }
+  .tr-actions {
+    width: 100%;
+    justify-content: flex-end;
   }
   .pe-toolbar {
     flex-direction: column;

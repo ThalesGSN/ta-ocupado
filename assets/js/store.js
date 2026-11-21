@@ -1,27 +1,6 @@
-// Estado da app com desfazer/refazer e cópia no localStorage deste aparelho.
-import { normalizeState } from './model.js';
+// Estado da mesa aberta, com desfazer e refazer. Quem salva é app.js (Minhas mesas).
 
-const KEY = 'ta-ocupado:v1';
 const LIMIT = 120;
-
-export function loadLocal() {
-  try {
-    const raw = localStorage.getItem(KEY);
-    return raw ? normalizeState(JSON.parse(raw)) : null;
-  } catch {
-    return null;
-  }
-}
-
-export function saveLocal(state) {
-  try {
-    if (state) localStorage.setItem(KEY, JSON.stringify(state));
-    else localStorage.removeItem(KEY);
-    return true;
-  } catch {
-    return false;
-  }
-}
 
 export function createStore(initial) {
   let state = initial;
@@ -42,7 +21,6 @@ export function createStore(initial) {
       if (undo.length > LIMIT) undo.shift();
       redo.length = 0;
       state = finalState;
-      saveLocal(state);
       emit(reason);
       return true;
     },
@@ -53,21 +31,18 @@ export function createStore(initial) {
       }
       redo.length = 0;
       state = next;
-      saveLocal(state);
       emit(reason);
     },
     reset(next, reason = 'reset') {
       undo.length = 0;
       redo.length = 0;
       state = next;
-      saveLocal(state);
       emit(reason);
     },
     undo() {
       if (!undo.length) return false;
       redo.push(state);
       state = undo.pop();
-      saveLocal(state);
       emit('undo');
       return true;
     },
@@ -75,7 +50,6 @@ export function createStore(initial) {
       if (!redo.length) return false;
       undo.push(state);
       state = redo.pop();
-      saveLocal(state);
       emit('redo');
       return true;
     },

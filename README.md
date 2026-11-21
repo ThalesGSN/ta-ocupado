@@ -11,6 +11,8 @@ Inspirado no jogo de quebra-cabeça *Is This Seat Taken?* (Poti Poti Studio). Vi
 - **Sugerir mesa** monta um arranjo automático que respeita as regras.
 - **Arrastar e soltar** troca as pessoas de lugar. No celular, toque e segure antes de arrastar. Enquanto você arrasta, os lugares em verde deixam a mesa mais feliz, e a estrela marca o melhor.
 - **Tocar numa pessoa** mostra os desejos dela (✓ e ✗), quem está em volta e as ações: mudar de lugar (também pelo teclado), fixar o lugar, tirar da mesa, marcar que não vai e editar.
+- **Minhas mesas** (toque no nome da mesa, no topo): todas as mesas ficam salvas neste navegador. Dá para salvar uma cópia antes de mexer de novo, abrir outra mesa, renomear, duplicar e excluir. Link aberto, arquivo importado e exemplo entram como mesas novas, sem apagar nenhuma.
+- **Compartilhar** gera um link com a mesa como está agora. No celular, **Enviar…** abre o compartilhamento do aparelho (WhatsApp, e-mail…). Quem abre o link recebe uma cópia da mesa e pode mexer nela sem mudar a sua.
 - **Desfazer/Refazer** (Ctrl+Z / Ctrl+Shift+Z), **Imprimir** (A4 deitado) e **Ajustes** (nome da mesa e lugares por lado).
 
 ### Regras da mesa
@@ -32,7 +34,7 @@ A sugestão automática usa recozimento simulado (*simulated annealing*), roda n
 
 - **Nenhum dado de pessoas fica neste repositório.** O exemplo usa nomes inventados, e o `.gitignore` bloqueia arquivos de convidados.
 - A app não faz requisições de rede. A política de segurança da página (`connect-src 'none'`) proíbe isso.
-- A mesa fica salva só no navegador de quem usa (`localStorage`). Use **Apagar dados deste aparelho** para limpar.
+- As mesas ficam salvas só no navegador de quem usa (`localStorage`, uma chave por mesa). **Apagar tudo deste aparelho**, no menu, limpa tudo.
 - O link de **Compartilhar** leva os dados compactados depois do `#`. O navegador não envia essa parte ao servidor, mas qualquer pessoa com o link vê a mesa: mande só para quem precisa.
 
 ## Formato do arquivo

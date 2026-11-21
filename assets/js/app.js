@@ -1,17 +1,18 @@
 // Tá ocupado? Monte a mesa do seu evento como um quebra-cabeça.
 import { normalizeState, evaluate, shortNames, seatLabel, moveHints, emptyState } from './model.js';
-import { createStore, loadLocal, saveLocal } from './store.js';
+import { createStore } from './store.js';
+import { listTables, getActiveId, setActive, loadTable, saveTable, createTable, renameTable, duplicateTable, deleteTable, findIdentical, migrateLegacy, clearAll } from './library.js';
 import { decodePayload, readHashPayload, shareUrl, parseFileText, fileName } from './share.js';
 import { DEMO } from './demo.js';
 import { Board } from './ui/board.js';
 import { renderPerson, renderGuide } from './ui/panel.js';
-import { confirmDialog, openShareDialog, openImportDialog, openSettingsDialog, openPeopleEditor, openHelpDialog, downloadJson } from './ui/dialogs.js';
+import { confirmDialog, openShareDialog, openImportDialog, openSettingsDialog, openPeopleEditor, openHelpDialog, openTablesDialog, downloadJson } from './ui/dialogs.js';
 import { h, $, icon } from './ui/dom.js';
 import { moodFace, MOOD_LABEL } from './ui/avatar.js';
 import { toast, announce, celebrate } from './ui/feedback.js';
 import { runSuggest } from './suggest-client.js';
 
-const ui = { selected: null, moveMode: null, busy: false, lastPercent: null, brokenCursor: 0 };
+const ui = { selected: null, moveMode: null, busy: false, lastPercent: null, brokenCursor: 0, tableId: null, quotaWarned: false };
 const store = createStore(null);
 const mqMobile = matchMedia('(max-width: 760px)');
 let board = null;
@@ -226,6 +227,7 @@ function render(reason) {
 
 function renderHeader(st, ev) {
   $('#event-title-text').textContent = st.title;
+  $('#event-title').setAttribute('aria-label', `Mesa aberta: ${st.title}. Abrir Minhas mesas`);
   const meter = $('#score-meter');
   meter.setAttribute('aria-valuenow', String(ev.percent));
   meter.setAttribute('aria-valuetext', `${ev.percent}% de felicidade`);
@@ -271,16 +273,17 @@ function buildWelcomeArt() {
 
 function menuItems() {
   return [
+    ['folder', 'Minhas mesas', () => openTables()],
+    ['copy', 'Salvar uma cópia', () => saveCopy()],
     ['seats', 'Ajustes da mesa', () => openSettings()],
     ['people', 'Pessoas', () => openPeople(), 'mobile'],
-    ['share', 'Compartilhar', () => doShare(), 'mobile'],
     ['download', 'Baixar arquivo .json', () => doExport()],
     ['upload', 'Importar convidados', () => doImport()],
     ['print', 'Imprimir', () => window.print()],
     ['book', 'Como funciona', () => openHelpDialog()],
     ['table', 'Esvaziar a mesa', () => doClear()],
     ['sparkle', 'Abrir o exemplo', () => doDemo()],
-    ['trash', 'Apagar dados deste aparelho', () => doErase(), 'danger'],
+    ['trash', 'Apagar tudo deste aparelho', () => doErase(), 'danger'],
   ];
 }
 
@@ -361,7 +364,7 @@ async function doShare() {
   const st = store.get();
   const base = location.href.split('#')[0];
   const url = await shareUrl(st, base);
-  openShareDialog({ url, onDownload: doExport, toast });
+  openShareDialog({ url, title: st.title, onDownload: doExport, toast });
 }
 
 function doExport() {
@@ -370,12 +373,122 @@ function doExport() {
   toast('Arquivo baixado. Ele tem os nomes: guarde num lugar seguro.');
 }
 
-function loadState(next, message) {
+// ---------- Minhas mesas (várias mesas no localStorage) ----------
+
+function persistActive({ touch = true } = {}) {
+  const st = store.get();
+  if (!st || !ui.tableId) return;
+  try {
+    saveTable(ui.tableId, st, { percent: lastEval ? lastEval.percent : null, touch });
+  } catch {
+    if (!ui.quotaWarned) {
+      ui.quotaWarned = true;
+      toast('Não deu para salvar: o espaço deste navegador acabou. Exclua mesas antigas em Minhas mesas.', { tone: 'error', ms: 9000 });
+    }
+  }
+}
+
+function openTable(id, state, reason = 'open') {
+  ui.tableId = id;
   ui.selected = null;
   ui.moveMode = null;
-  if (store.get()) store.replace(next, 'replace');
-  else store.reset(next, 'reset');
-  if (message) toast(message);
+  ui.lastPercent = null;
+  try {
+    setActive(id);
+  } catch {
+    /* sem localStorage: a mesa ainda abre */
+  }
+  store.reset(state, reason);
+}
+
+// Salva `next` como mesa nova (ou reaproveita uma idêntica) e abre.
+function addAndOpen(next, { message, dedupe = false } = {}) {
+  let id = dedupe ? findIdentical(next) : null;
+  const existed = !!id;
+  if (!id) {
+    try {
+      id = createTable(next);
+    } catch (err) {
+      toast(err && err.name !== 'QuotaExceededError' ? err.message : 'Não deu para salvar a mesa: o espaço deste navegador acabou.', { tone: 'error', ms: 8000 });
+      return null;
+    }
+  }
+  openTable(id, existed ? loadTable(id) || next : next, 'open');
+  const text = typeof message === 'function' ? message(existed) : message;
+  if (text) toast(text);
+  return id;
+}
+
+function openMostRecentOrWelcome() {
+  for (const t of listTables()) {
+    const st = loadTable(t.id);
+    if (st) return openTable(t.id, st);
+  }
+  ui.tableId = null;
+  store.reset(null, 'reset');
+}
+
+function saveCopy({ silent = false } = {}) {
+  if (!store.get() || !ui.tableId) return null;
+  persistActive();
+  try {
+    const id = duplicateTable(ui.tableId);
+    if (!silent) toast('Cópia salva em Minhas mesas.', { action: 'Dar nome', onAction: () => openTables({ renameId: id }) });
+    return id;
+  } catch (err) {
+    toast(err && err.name !== 'QuotaExceededError' ? err.message : 'Não deu para salvar a cópia: o espaço deste navegador acabou.', { tone: 'error', ms: 8000 });
+    return null;
+  }
+}
+
+function openTables({ renameId } = {}) {
+  persistActive({ touch: false });
+  openTablesDialog({
+    activeId: () => ui.tableId,
+    list: listTables,
+    renameId,
+    onOpen: (id) => {
+      if (id === ui.tableId) return;
+      const st = loadTable(id);
+      if (st) openTable(id, st);
+      else toast('Não consegui abrir essa mesa: os dados dela estão corrompidos.', { tone: 'error' });
+    },
+    onRename: (id, title) => {
+      const t = title.trim();
+      if (!t) return;
+      if (id === ui.tableId) store.update((s) => { s.title = t.slice(0, 80); }, 'rename');
+      else renameTable(id, t);
+    },
+    onDuplicate: (id) => {
+      if (id === ui.tableId) return saveCopy({ silent: true });
+      try {
+        return duplicateTable(id);
+      } catch (err) {
+        toast(err.message, { tone: 'error' });
+        return null;
+      }
+    },
+    onSaveCopy: () => saveCopy({ silent: true }),
+    onDelete: async (id) => {
+      const t = listTables().find((x) => x.id === id);
+      const ok = await confirmDialog({
+        title: 'Excluir esta mesa?',
+        text: `A mesa "${t ? t.title : ''}" será apagada deste navegador. Isso não dá para desfazer.`,
+        confirm: 'Excluir',
+        cancel: 'Cancelar',
+        danger: true,
+      });
+      if (!ok) return false;
+      deleteTable(id);
+      if (id === ui.tableId) openMostRecentOrWelcome();
+      toast('Mesa excluída.');
+      return true;
+    },
+    onNew: () => {
+      addAndOpen(emptyState('Nova mesa'));
+      openPeople();
+    },
+  });
 }
 
 function doImport() {
@@ -383,7 +496,10 @@ function doImport() {
     onLoad: (text) => {
       const st = parseFileText(text);
       if (!st.people.length) throw new Error('O arquivo não tem nenhuma pessoa.');
-      loadState(st, `${st.people.length} pessoas importadas.${store.canUndo() ? ' Use Desfazer para voltar à mesa anterior.' : ''}`);
+      addAndOpen(st, {
+        dedupe: true,
+        message: (existed) => (existed ? 'Essa mesa já estava salva aqui: abri ela.' : `${st.people.length} pessoas importadas como uma mesa nova.`),
+      });
       return st;
     },
   });
@@ -398,23 +514,25 @@ async function doClear() {
 }
 
 function doDemo() {
-  loadState(normalizeState(structuredClone(DEMO)), store.get() ? 'Exemplo aberto. Use Desfazer para voltar à sua mesa.' : null);
+  addAndOpen(normalizeState(structuredClone(DEMO)), { dedupe: true, message: store.get() ? 'Exemplo aberto. Sua mesa continua em Minhas mesas.' : null });
 }
 
 async function doErase() {
+  const n = listTables().length;
   const ok = await confirmDialog({
-    title: 'Apagar dados deste aparelho?',
-    text: 'A mesa e os nomes salvos neste navegador serão apagados. Se quiser guardar, baixe o arquivo .json antes.',
-    confirm: 'Apagar',
+    title: 'Apagar tudo deste aparelho?',
+    text: `${n === 1 ? 'A mesa salva' : `As ${n} mesas salvas`} neste navegador e os nomes serão apagados. Se quiser guardar alguma, baixe o arquivo .json antes.`,
+    confirm: 'Apagar tudo',
     cancel: 'Cancelar',
     danger: true,
   });
   if (!ok) return;
-  saveLocal(null);
+  clearAll();
+  ui.tableId = null;
   ui.selected = null;
   ui.moveMode = null;
   store.reset(null, 'reset');
-  toast('Dados apagados deste aparelho.');
+  toast('Tudo apagado deste aparelho.');
 }
 
 // ---------- Impressão ----------
@@ -466,17 +584,10 @@ async function openFromHash() {
     return false;
   }
   clearHash();
-  const local = store.get();
-  if (local && local.people.length && JSON.stringify(local) !== JSON.stringify(fromLink)) {
-    const ok = await confirmDialog({
-      title: 'Abrir a mesa do link?',
-      text: `Este aparelho já tem a mesa "${local.title}". Abrir o link troca a mesa salva aqui (dá para desfazer).`,
-      confirm: 'Abrir a mesa do link',
-      cancel: 'Manter a minha',
-    });
-    if (!ok) return true;
-  }
-  loadState(fromLink, 'Mesa aberta. Ela fica salva só neste aparelho.');
+  addAndOpen(fromLink, {
+    dedupe: true,
+    message: (existed) => (existed ? 'Essa mesa já estava salva aqui: abri ela.' : 'Mesa do link salva em Minhas mesas, só neste aparelho.'),
+  });
   return true;
 }
 
@@ -500,7 +611,7 @@ function wire() {
   $('#btn-share').addEventListener('click', doShare);
   $('#btn-people').addEventListener('click', openPeople);
   $('#btn-more').addEventListener('click', () => toggleMenu());
-  $('#event-title').addEventListener('click', openSettings);
+  $('#event-title').addEventListener('click', () => openTables());
   $('#move-cancel').addEventListener('click', cancelMove);
   $('#rules-btn').addEventListener('click', () => {
     const ev = lastEval;
@@ -517,7 +628,7 @@ function wire() {
     if (act === 'demo') doDemo();
     else if (act === 'import') doImport();
     else if (act === 'blank') {
-      loadState(emptyState('Minha mesa'));
+      addAndOpen(emptyState('Minha mesa'));
       openPeople();
     }
   });
@@ -541,14 +652,32 @@ function wire() {
   });
   window.addEventListener('beforeprint', buildPrintSheet);
   window.addEventListener('hashchange', () => openFromHash());
-  store.subscribe((_, reason) => render(reason));
+  store.subscribe((_, reason) => {
+    render(reason);
+    persistActive({ touch: !['open', 'boot'].includes(reason) });
+  });
+  window.addEventListener('storage', (e) => {
+    if (e.key && e.key.startsWith('ta-ocupado:') && document.querySelector('dialog.tables-dialog[open]')) {
+      document.querySelector('dialog.tables-dialog[open]').dispatchEvent(new Event('refresh'));
+    }
+  });
 }
 
 async function boot() {
   wire();
-  const local = loadLocal();
-  if (local) store.reset(local, 'boot');
-  else render('boot');
+  let opened = false;
+  try {
+    migrateLegacy();
+    const id = getActiveId() || (listTables()[0] && listTables()[0].id);
+    const st = id ? loadTable(id) : null;
+    if (st) {
+      openTable(id, st, 'boot');
+      opened = true;
+    }
+  } catch {
+    /* sem localStorage (modo privado restrito): segue sem salvar */
+  }
+  if (!opened) render('boot');
   await openFromHash();
 }
 
